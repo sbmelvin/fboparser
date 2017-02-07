@@ -1,0 +1,20 @@
+{
+  "name": "fboparser",
+  "version": "1.0.0",
+  "description": "Federal BizOps Parser",
+  "main": "parser.js",
+  "dependencies": {
+    "console.table": "^0.8.0",
+    "forever": "^0.15.3",
+    "heapdump": "^0.3.7",
+    "pg": "^6.1.2",
+    "pg-native": "^1.10.0",
+    "sqlite3": "^3.1.8"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Stephen Melvin",
+  "license": "ISC"
+}
