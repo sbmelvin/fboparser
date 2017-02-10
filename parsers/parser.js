@@ -1,18 +1,18 @@
-const presol	= require("./parsers/presol.js");
-const srcsgt	= require("./parsers/srcsgt");
-const snote		= require("./parsers/snote");
-const combine	= require("./parsers/combine");
-const amdcss	= require("./parsers/amdcss");
-const mod		= require("./parsers/mod");
-const award		= require("./parsers/award");
-const ja		= require("./parsers/ja");
-const fairopp	= require("./parsers/fairopp");
-const archive	= require("./parsers/archive");
-const unarchive	= require("./parsers/unarchive");
+const presol	= require('./presol.js');
+const srcsgt	= require('./srcsgt');
+const snote		= require('./snote');
+const combine	= require('./combine');
+const amdcss	= require('./amdcss');
+const mod		= require('./mod');
+const award		= require('./award');
+const ja		= require('./ja');
+const fairopp	= require('./fairopp');
+const archive	= require('./archive');
+const unarchive	= require('./unarchive');
 
 const fs = require('fs');
 const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require('sqlite3');
 const FBOFEED_DIR = '/Users/stephen/Development/fbo_data/';
 //const FBOFEED_DIR = './FBOFEED';
 
@@ -20,7 +20,6 @@ if (fs.existsSync("contracts.sqlite")) {
 	console.log("Removing existing contracts.sqlite file");
 	fs.unlinkSync("contracts.sqlite");
 }
-
 
 const db = new sqlite3.Database('contracts.sqlite', (err) => {
 	if (err) throw err;
@@ -32,7 +31,10 @@ const db = new sqlite3.Database('contracts.sqlite', (err) => {
 function ReadFBOFiles() {
 	fs.readdir(FBOFEED_DIR, (err, files) => {
 		if (err) throw err;
-
+		let stmt = db.prepare("INSERT INTO PRESOL(date, year, agency, office, location, zip, classcod, naics, offadd, subject, solnbr, respdate, contact) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (err) => {
+			if (err) throw err;
+		});
+		
 		// For each file, craft the full path
 		files.forEach(file => {
 			let filePath = path.join(FBOFEED_DIR, file);
@@ -47,35 +49,29 @@ function ReadFBOFiles() {
 					if (err) throw err;
 
 					let presolRecords = presol.parse(data);
-					return;
-					db.serialize(function() {
-						var stmt = db.prepare("INSERT INTO PRESOL(date, year, agency, office, location, zip, classcod, naics, offadd, subject, solnbr, respdate, contact) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (err) => {
+					console.log("Parsed %d", presolRecords.length);
+					
+					presolRecords.forEach(r => {
+						let values = [
+							r.date,
+							r.year,
+							r.agency,
+							r.office,
+							r.location,
+							r.zip,
+							r.classcod,
+							r.naics,
+							r.offadd,
+							r.subject,
+							r.solnbr,
+							r.respdate,
+							r.contact
+						];
+
+						stmt.run(values, (err) => {
 							if (err) throw err;
+							console.log("stmt run");
 						});
-						
-						presolRecords.forEach(r => {
-							let values = [
-								r.date,
-								r.year,
-								r.agency,
-								r.office,
-								r.location,
-								r.zip,
-								r.classcod,
-								r.naics,
-								r.offadd,
-								r.subject,
-								r.solnbr,
-								r.respdate,
-								r.contact
-							];
-
-							stmt.run(values, (err) => {
-								if (err) throw err;
-							});
-						});
-
-						stmt.finalize();
 					});
 				});
 			});
@@ -102,6 +98,5 @@ function initPresolDatabase(callback) {
 
 		db.run(sql, (err) => {
 			if (err) throw err;
-			console.log("Created PRESOL table.");
 		});
 }

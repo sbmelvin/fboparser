@@ -57,7 +57,9 @@ module.exports.parse = function(data) {
 		match.split('\n').forEach( line => {
 			fields.forEach( field => {
 				let fieldMatch = field.regex.exec(line);
-				if (fieldMatch) presolRecord[field.name] = fieldMatch[1];
+				if (fieldMatch) {
+					presolRecord[field.name] = fieldMatch[1];
+				}
 			});
 		});
 
