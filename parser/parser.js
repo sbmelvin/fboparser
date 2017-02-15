@@ -15,9 +15,9 @@ module.exports.run = function(callback) {
 	const path = require('path');		
 
 	let config = {
-		user: 'postgres',				//env var: PGUSER
-		database: 'fboparser',			//env var: PGDATABASE
-		password: 'postgres',			//env var: PGPASSWORD
+		user: 'postgres',			//env var: PGUSER
+		database: 'fboparser',		//env var: PGDATABASE
+		password: 'postgres',		//env var: PGPASSWORD
 		host: 'localhost',			// Server hosting the postgres database
 		port: 5432,					//env var: PGPORT
 		max: 10,					// max number of clients in the pool
@@ -25,13 +25,15 @@ module.exports.run = function(callback) {
 
 	const pg = require('pg').native;
 	const pool = new pg.Pool(config);
-	const pgclient = pg.Client;
 
-	const FBOFEED_DIR = '/Users/stephen/Development/fbo_data/';
+	const FBOFEED_DIR = '/Users/stephen/Development/fbo_data';
+	const OUTFILE = './output.csv';
 
 	let count = 0;
 	// Get list of files in FBOFEED_DIR
-	function ReadFBOFiles() {
+	function ReadFBOFiles(cb) {
+		removeExistingCSV(OUTFILE);
+		writeHeaders();
 		fs.readdir(FBOFEED_DIR, (err, files) => {
 			if (err) throw err;
 
@@ -45,24 +47,69 @@ module.exports.run = function(callback) {
 					if (stats.isDirectory()) return;
 
 					// Read the file and parse its contents
-					fs.readFile(filePath, 'ascii', (err, data) => {
+					fs.readFile(filePath, 'utf8', (err, data) => {
 						if (err) throw err;
 
 						let presolObjs = presol.parse(data);
+						let output = '';
 
 						presolObjs.forEach(v => {
-							let solnbr = v.solnbr;
-							let subject = v.subject;
-
-							pool.query('INSERT INTO PRESOL (solnbr, subject) VALUES ($1, $2)', [solnbr, subject], function(err, result) {
-								if (err) throw err;
-							});
+							output += objToCSV(v);
 						});
+
+						fs.appendFileSync(OUTFILE, output);
 					});
 				});
 			});
 		});
 	}
+	function removeExistingCSV(filePath) {
+		if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+	}
 
-	ReadFBOFiles();
+	function writeHeaders() {
+		let fields = [
+			'date', 
+			'year', 
+			'agency', 
+			'office', 
+			'location', 
+			'zip', 
+			'classcod', 
+			'naics', 
+			'offadd', 
+			'subject', 
+			'solnbr', 
+			'respdate', 
+			'contact'
+		];
+
+		let str = '';
+
+		fields.forEach( field => {
+			str += (field + ',');
+		});
+
+		str = str.slice(0, -1) + '\n';
+
+		fs.appendFileSync(OUTFILE, str);
+	}
+
+	function objToCSV(o) {
+		let str = '';
+		for (let prop in o) {
+			let val = o[prop];
+			val = val.trim();
+			if (val.length > 0) {
+				val = val.replace(/["]/g,'""');
+				val = '"' + val + '"';
+			}
+			
+			str += (val + ',');
+		}
+		str = str.slice(0, -1) + '\n';
+		return str;
+	}
+
+	ReadFBOFiles(callback);
 }

@@ -58,7 +58,7 @@ module.exports.parse = function(data) {
 			fields.forEach( field => {
 				let fieldMatch = field.regex.exec(line);
 				if (fieldMatch) {
-					presolRecord[field.name] = fieldMatch[1];
+					presolRecord[field.name] = fieldMatch[1].trim();
 				}
 			});
 		});
