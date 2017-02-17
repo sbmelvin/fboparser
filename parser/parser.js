@@ -14,22 +14,9 @@ module.exports.run = function(callback) {
 	const fs = require('fs');
 	const path = require('path');		
 
-	let config = {
-		user: 'postgres',			//env var: PGUSER
-		database: 'fboparser',		//env var: PGDATABASE
-		password: 'postgres',		//env var: PGPASSWORD
-		host: 'localhost',			// Server hosting the postgres database
-		port: 5432,					//env var: PGPORT
-		max: 10,					// max number of clients in the pool
-	};
-
-	const pg = require('pg').native;
-	const pool = new pg.Pool(config);
-
 	const FBOFEED_DIR = '/Users/stephen/Development/fbo_data';
-	const OUTFILE = './output.csv';
+	const OUTFILE = './presol.csv';
 
-	let count = 0;
 	// Get list of files in FBOFEED_DIR
 	function ReadFBOFiles(cb) {
 		removeExistingCSV(OUTFILE);
@@ -50,19 +37,21 @@ module.exports.run = function(callback) {
 					fs.readFile(filePath, 'utf8', (err, data) => {
 						if (err) throw err;
 
-						let presolObjs = presol.parse(data);
-						let output = '';
+						presol.parse(data, (err, presolObjs) => {
+							let output = '';
 
-						presolObjs.forEach(v => {
-							output += objToCSV(v);
+							presolObjs.forEach(v => {
+								output += objToCSV(v);
+							});
+
+							fs.appendFileSync(OUTFILE, output);
 						});
-
-						fs.appendFileSync(OUTFILE, output);
 					});
 				});
 			});
 		});
 	}
+	
 	function removeExistingCSV(filePath) {
 		if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 	}

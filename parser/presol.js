@@ -1,9 +1,8 @@
 
-module.exports.parse = function(data) {
-	// Find PRESOL entries
-	let matches = data.match(/(?:<PRESOL>)[\s\S]*?(?=<\/PRESOL>)/g) || [];
-
-	let presolRecords = [];
+module.exports.parse = function(data, cb) {
+	const fboschema = require('./fboschema.js');
+	
+	let outerTagRegex = /(?:<PRESOL>)[\s\S]*?(?=<\/PRESOL>)/g;
 
 	let regex = {
 		date: /<DATE>(\d+)+/,	 
@@ -37,34 +36,10 @@ module.exports.parse = function(data) {
 		{ name: 'contact', regex: regex.contact}
 	];
 
-	matches.forEach( match => {
-		let presolRecord = {
-			date: '',
-			year: '',
-			agency: '',
-			office: '',
-			location: '',
-			zip: '',
-			classcod: '',
-			naics: '',
-			offadd: '',
-			subject: '',
-			solnbr: '',
-			respdate: '',
-			contact: ''
-		};
-
-		match.split('\n').forEach( line => {
-			fields.forEach( field => {
-				let fieldMatch = field.regex.exec(line);
-				if (fieldMatch) {
-					presolRecord[field.name] = fieldMatch[1].trim();
-				}
-			});
-		});
-
-		presolRecords.push(presolRecord);
+	const presolSchema = new fboschema({
+		outerTagRegex: outerTagRegex,
+		fields: fields
 	});
 
-	return presolRecords;
+	presolSchema.parse(data, cb);
 }
