@@ -5,7 +5,7 @@ module.exports.run = function(callback) {
 	const path = require('path');		
 
 	const FBOFEED_DIR = '/Users/stephen/Development/fbo_data';
-	const CSV_FILENAME = './fbofeed_';
+	const CSV_FILENAME = './csv/fbofeed_';
 	const tags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'EMAIL', 'FAIROPP', 'JA', 'MOD', 'PRESOL', 'SNOTE', 'SRCSGT', 'UNARCHIVE'];
 
 	// Get list of files in FBOFEED_DIR
@@ -31,7 +31,7 @@ module.exports.run = function(callback) {
 
 							for (let tag in result) {
 								let output = '';
-								
+
 								result[tag].forEach( obj => {
 									output += objToCSV(obj);
 								});
