@@ -1,3 +1,3 @@
 #!/bin/bash
 
-psql -f loadpresol.sql -d fboparser
+psql -f loadcsv.sql -d fboparser
