@@ -1,26 +1,15 @@
 module.exports.run = function(callback) {
-	const presol	= require('./presol.js');
-	const srcsgt	= require('./srcsgt');
-	const snote		= require('./snote');
-	const combine	= require('./combine');
-	const amdcss	= require('./amdcss');
-	const mod		= require('./mod');
-	const award		= require('./award');
-	const ja		= require('./ja');
-	const fairopp	= require('./fairopp');
-	const archive	= require('./archive');
-	const unarchive	= require('./unarchive');
+	const fbofeed = require('./fbofeed.js');
 
 	const fs = require('fs');
 	const path = require('path');		
 
 	const FBOFEED_DIR = '/Users/stephen/Development/fbo_data';
-	const OUTFILE = './presol.csv';
+	const CSV_FILENAME = './fbofeed_';
+	const tags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'EMAIL', 'FAIROPP', 'JA', 'MOD', 'PRESOL', 'SNOTE', 'SRCSGT', 'UNARCHIVE'];
 
 	// Get list of files in FBOFEED_DIR
 	function ReadFBOFiles(cb) {
-		removeExistingCSV(OUTFILE);
-		writeHeaders();
 		fs.readdir(FBOFEED_DIR, (err, files) => {
 			if (err) throw err;
 
@@ -37,14 +26,18 @@ module.exports.run = function(callback) {
 					fs.readFile(filePath, 'utf8', (err, data) => {
 						if (err) throw err;
 
-						presol.parse(data, (err, presolObjs) => {
-							let output = '';
+						fbofeed.parse(data, (err, result) => {
+							if (err) throw err;
 
-							presolObjs.forEach(v => {
-								output += objToCSV(v);
-							});
+							for (let tag in result) {
+								let output = '';
+								
+								result[tag].forEach( obj => {
+									output += objToCSV(obj);
+								});
 
-							fs.appendFileSync(OUTFILE, output);
+								fs.appendFileSync(CSV_FILENAME + tag + '.csv', output);
+							}
 						});
 					});
 				});
@@ -56,7 +49,7 @@ module.exports.run = function(callback) {
 		if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 	}
 
-	function writeHeaders() {
+	function writeHeaders(filePath) {
 		let fields = [
 			'date', 
 			'year', 

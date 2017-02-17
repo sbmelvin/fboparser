@@ -27,7 +27,7 @@ FBOSchema.prototype.parse = function(data, cb){
 			this._fields.forEach( field => {
 				let fieldMatch = field.regex.exec(line);
 				if (fieldMatch) {
-					record[field.name] = fieldMatch[1].trim();
+					return record[field.name] = fieldMatch[1].trim();
 				}
 			});
 		});
