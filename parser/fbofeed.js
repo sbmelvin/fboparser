@@ -1,5 +1,48 @@
-module.exports.parse = function(data, cb) {	
-	let tags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'EMAIL', 'FAIROPP', 'JA', 'MOD', 'PRESOL', 'SNOTE', 'SRCSGT', 'UNARCHIVE'];
+process.on('message', message => {
+	if (message.filePath === undefined) {
+		process.exit(0);
+	}
+	
+	parse(message.filePath, (err) => {
+		if (err) throw err;
+		process.send("Gimme");
+	});
+});
+
+function objToCSV(o) {
+	let str = '';
+	for (let prop in o) {
+		let val = o[prop];
+		val = val.trim();
+		if (val.length > 0) {
+			val = val.replace(/["]/g,'""');
+			val = '"' + val + '"';
+		}
+		
+		str += (val + ',');
+	}
+	str = str.slice(0, -1) + '\n';
+	return str;
+}
+
+function parse(filePath, cb) {
+	const fs = require('fs');
+	const CSV_FILENAME = './csv/fbofeed_';
+
+	let tags = [
+		{ name: 'AMDCSS', regex:  new RegExp('(?:<AMDCSS>)[\\s\\S]*?(?=<\/AMDCSS>)', 'g')},
+		{ name: 'ARCHIVE', regex:  new RegExp('(?:<ARCHIVE>)[\\s\\S]*?(?=<\/ARCHIVE>)', 'g')},
+		{ name: 'AWARD', regex:  new RegExp('(?:<AWARD>)[\\s\\S]*?(?=<\/AWARD>)', 'g')},
+		{ name: 'COMBINE', regex:  new RegExp('(?:<COMBINE>)[\\s\\S]*?(?=<\/COMBINE>)', 'g')},
+		{ name: 'EMAIL', regex:  new RegExp('(?:<EMAIL>)[\\s\\S]*?(?=<\/EMAIL>)', 'g')},
+		{ name: 'FAIROPP', regex:  new RegExp('(?:<FAIROPP>)[\\s\\S]*?(?=<\/FAIROPP>)', 'g')},
+		{ name: 'JA', regex:  new RegExp('(?:<JA>)[\\s\\S]*?(?=<\/JA>)', 'g')},
+		{ name: 'MOD', regex:  new RegExp('(?:<MOD>)[\\s\\S]*?(?=<\/MOD>)', 'g')},
+		{ name: 'PRESOL', regex:  new RegExp('(?:<PRESOL>)[\\s\\S]*?(?=<\/PRESOL>)', 'g')},
+		{ name: 'SNOTE', regex:  new RegExp('(?:<SNOTE>)[\\s\\S]*?(?=<\/SNOTE>)', 'g')},
+		{ name: 'SRCSGT', regex:  new RegExp('(?:<SRCSGT>)[\\s\\S]*?(?=<\/SRCSGT>)', 'g')},
+		{ name: 'UNARCHIVE', regex:  new RegExp('(?:<UNARCHIVE>)[\\s\\S]*?(?=<\/UNARCHIVE>)', 'g')}
+		];
 
 	let fields = [
 		{ name: 'agency', regex: /<AGENCY>(.*)/},
@@ -28,9 +71,7 @@ module.exports.parse = function(data, cb) {
 		{ name: 'popzip', regex: /<POPZIP>(.*)/},
 		{ name: 'respdate', regex: /<RESPDATE>(.*)/},
 		{ name: 'setaside', regex: /<SETASIDE>(.*)/},
-		{ name: 'snote', regex: /<SNOTE>(.*)/},
 		{ name: 'solnbr', regex: /<SOLNBR>(.*)/},
-		{ name: 'srcsgt', regex: /<SRCSGT>(.*)/},
 		{ name: 'stauth', regex: /<STAUTH>(.*)/},
 		{ name: 'subject', regex: /<SUBJECT>(.*)/},
 		{ name: 'url', regex: /<URL>(.*)/},
@@ -65,40 +106,57 @@ module.exports.parse = function(data, cb) {
 		popzip: '',
 		respdate: '',
 		setaside: '',
-		snote: '',
 		solnbr: '',
-		srcsgt: '',
 		stauth: '',
 		subject: '',
 		url: '',
 		year: '',
-		zip: ''
+		zip: '',
+		filename: ''
 	};
 
 	let result = {};
 
-	tags.forEach( tag => {
-		let tagRegex = new RegExp('(?:<' + tag + '>)[\\s\\S]*?(?=<\\/' + tag + '>)', 'g');
+	// Read the file and parse its contents
+	fs.readFile(filePath, 'utf8', (err, data) => {
+		if (err) throw err;
 
-		let matches = data.match(tagRegex) || [];
+		tags.forEach( tag => {
+			let matches = data.match(tag.regex) || [];
+			//	console.log("tag: %s, len: %d", tag.name, matches.length);
 
-		let parsedObjects = matches.map( match => {
-			let record = Object.assign({}, emptyRecord); 
+			let parsedObjects = matches.map( match => {
+				let record = Object.assign({}, emptyRecord); 
 
-			match.split('\n').forEach( line => {
-				fields.forEach( field => {
-					let fieldMatch = field.regex.exec(line);
-					if (fieldMatch) {
-						return record[field.name] = fieldMatch[1].trim();
-					}
+				match.split('\n').forEach( line => {
+					fields.forEach( field => {
+						let fieldMatch = field.regex.exec(line);
+						if (fieldMatch) {
+							return record[field.name] = fieldMatch[1].trim();
+						}
+					});
 				});
+
+				return record;
 			});
 
-			return record;
+			result[tag.name] = parsedObjects;
+
+			for (let tag in result) {
+				let output = '';
+
+				result[tag].forEach( obj => {
+					obj.filename = filePath;
+					output += objToCSV(obj);
+				});
+
+				fs.appendFile(CSV_FILENAME + tag + '.csv', output, (err) => {
+					if (err) throw err;
+				});
+			}
 		});
 
-		result[tag] = parsedObjects;
+		console.log("Parsed %s", filePath);
+		cb();
 	});
-
-	cb(undefined, result);
 }

@@ -1,12 +1,15 @@
 module.exports.run = function(callback) {
-	const fbofeed = require('./fbofeed.js');
-
 	const fs = require('fs');
-	const path = require('path');		
+	const path = require('path');
+	const child_process = require('child_process');
+	const numCPUs = require('os').cpus().length;
 
 	const FBOFEED_DIR = '/Users/stephen/Development/fbo_data';
-	const CSV_FILENAME = './csv/fbofeed_';
 	const tags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'EMAIL', 'FAIROPP', 'JA', 'MOD', 'PRESOL', 'SNOTE', 'SRCSGT', 'UNARCHIVE'];
+
+	let filesPaths = [];
+	let filePromises = [];
+	let numChildren = 0;
 
 	// Get list of files in FBOFEED_DIR
 	function ReadFBOFiles(cb) {
@@ -16,33 +19,44 @@ module.exports.run = function(callback) {
 			// For each file, craft the full path
 			files.forEach(file => {
 				let filePath = path.join(FBOFEED_DIR, file);
-
-				// Ensure the file is not a directory
-				fs.stat(filePath, (err, stats) => {
-					if (err) throw err;
-					if (stats.isDirectory()) return;
-
-					// Read the file and parse its contents
-					fs.readFile(filePath, 'utf8', (err, data) => {
+				let filePromise = new Promise((res, rej) => {
+					// Ensure the file is not a directory
+					fs.stat(filePath, (err, stats) => {
 						if (err) throw err;
-
-						fbofeed.parse(data, (err, result) => {
-							if (err) throw err;
-
-							for (let tag in result) {
-								let output = '';
-
-								result[tag].forEach( obj => {
-									output += objToCSV(obj);
-								});
-
-								fs.appendFileSync(CSV_FILENAME + tag + '.csv', output);
-							}
-						});
+						if (stats.isDirectory()) return res(null);
+						res(filePath);
 					});
 				});
+				filePromises.push(filePromise);
+			});
+
+			Promise.all(filePromises).then((values) => {
+				filePaths = values.filter(value => {
+					return value? true:false;
+				});
+
+				for(let i = 0; i < numCPUs; i++) {
+					createWorker();
+				}
+			}).catch(reason => {
+				console.log("Err: ", reason);
 			});
 		});
+	}
+
+	function createWorker() {
+		let worker = child_process.fork('./parser/fbofeed.js');
+		
+		worker.on('message', message => {
+			worker.send({filePath: filePaths.pop()});
+			console.log(filePaths.length);  
+		});
+
+		worker.on('exit', (code, signal) => {
+			console.log("Child exited...");
+		});
+
+		worker.send({filePath: filePaths.pop()});
 	}
 	
 	function removeExistingCSV(filePath) {
@@ -77,21 +91,7 @@ module.exports.run = function(callback) {
 		fs.appendFileSync(OUTFILE, str);
 	}
 
-	function objToCSV(o) {
-		let str = '';
-		for (let prop in o) {
-			let val = o[prop];
-			val = val.trim();
-			if (val.length > 0) {
-				val = val.replace(/["]/g,'""');
-				val = '"' + val + '"';
-			}
-			
-			str += (val + ',');
-		}
-		str = str.slice(0, -1) + '\n';
-		return str;
-	}
+
 
 	ReadFBOFiles(callback);
 }
