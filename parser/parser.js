@@ -5,7 +5,7 @@ module.exports.run = function(callback) {
 	const numCPUs = require('os').cpus().length;
 
 	const FBOFEED_DIR = '/Users/stephen/Development/fbo_data';
-	const tags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'EMAIL', 'FAIROPP', 'JA', 'MOD', 'PRESOL', 'SNOTE', 'SRCSGT', 'UNARCHIVE'];
+	const tags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'FAIROPP', 'JA', 'MOD', 'PRESOL', 'SNOTE', 'SRCSGT', 'UNARCHIVE'];
 
 	let filesPaths = [];
 	let filePromises = [];
@@ -34,8 +34,8 @@ module.exports.run = function(callback) {
 				filePaths = values.filter(value => {
 					return value? true:false;
 				});
-
-				for(let i = 0; i < numCPUs; i++) {
+				
+				for(let i = 1; i < numCPUs; i++) {
 					createWorker();
 				}
 			}).catch(reason => {
@@ -58,40 +58,6 @@ module.exports.run = function(callback) {
 
 		worker.send({filePath: filePaths.pop()});
 	}
-	
-	function removeExistingCSV(filePath) {
-		if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-	}
-
-	function writeHeaders(filePath) {
-		let fields = [
-			'date', 
-			'year', 
-			'agency', 
-			'office', 
-			'location', 
-			'zip', 
-			'classcod', 
-			'naics', 
-			'offadd', 
-			'subject', 
-			'solnbr', 
-			'respdate', 
-			'contact'
-		];
-
-		let str = '';
-
-		fields.forEach( field => {
-			str += (field + ',');
-		});
-
-		str = str.slice(0, -1) + '\n';
-
-		fs.appendFileSync(OUTFILE, str);
-	}
-
-
 
 	ReadFBOFiles(callback);
 }
