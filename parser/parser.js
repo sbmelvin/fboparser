@@ -35,8 +35,8 @@ function ReadFBOFiles(callback) {
 				return value? true:false;
 			});
 			
-			for(let i = 0; i < 1; i++) {
-				createWorker();
+			for(let i = 0; i < numCPUs; i++) {
+				createWorker(callback);
 			}
 		}).catch(reason => {
 			console.log("Err: ", reason);
@@ -44,13 +44,13 @@ function ReadFBOFiles(callback) {
 	});
 }
 
-function createWorker() {
+function createWorker(callback) {
 	let worker = child_process.fork('./parser/fbofeed.js');
 	workers.push(worker);
-	
+
 	worker.on('message', message => {
+		console.log('Worker completed parsing ', message.filePath);
 		let path = filePaths.pop();
-		console.log(filePaths.length, path);
 		worker.send({filePath: filePaths.pop()});
 	});
 

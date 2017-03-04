@@ -1,7 +1,10 @@
 process.on('message', message => {
-	parse(message.filePath, (err) => {
-		if (err) throw err;
-		process.send('NEW FILEPATH PLS!');
+	parse(message.filePath, (err, filePath) => {
+		if (err) { 
+			console.log(err);
+			throw err;
+		}
+		process.send({filePath: filePath});
 	});
 });
 
@@ -109,7 +112,7 @@ function parseEmail(text){
 }
 
 
-function parse(filePath, cb) {
+function parse(filePath, callback) {
 	const fs = require('fs');
 	const CSV_FILENAME = './csv/fbofeed_';
 
@@ -156,7 +159,7 @@ function parse(filePath, cb) {
 
 	// Read the file and parse its contents
 	fs.readFile(filePath, 'utf8', (err, data) => {
-		if (err) throw err;
+		if (err) return callback(err);
 
 		data = normalize(data);
 
@@ -209,11 +212,11 @@ function parse(filePath, cb) {
 
 
 			fs.appendFile(CSV_FILENAME + tag.name + '.csv', csvOutput, (err) => {
-				if (err) throw err;
+				if (err) return callback(err);
 			});
 		});
 
 		console.log("Parsed %s", filePath);
-		cb();
+		callback(null, filePath);
 	});
 }
