@@ -1,8 +1,12 @@
 process.on('message', message => {
-	parse(message.filePath, (err, filePath) => {
-		if (err) throw err;
-		process.send({cmd: 'done', filePath: filePath});
-	});
+	if (message.cmd === 'parse') {
+		parse(message.filePath, (err, filePath) => {
+			if (err) throw err;
+			process.send({cmd: 'done', filePath: filePath});
+		});
+	} else if (message.cmd === 'quit') {
+		process.exit(0);
+	}
 });
 
 process.send({cmd: 'begin'});

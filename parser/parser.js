@@ -53,7 +53,16 @@ function createWorker(callback) {
 		} 
 
 		let path = filePaths.pop();
-		worker.send({filePath: path});
+
+		let command = {};
+
+		if (path === undefined) { 
+			command = {cmd: 'quit'};
+		} else {
+			command = { cmd: 'parse', filePath: path};
+		}
+
+		worker.send(command);
 	});
 
 	worker.on('exit', (code, signal) => {
