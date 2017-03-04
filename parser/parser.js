@@ -8,8 +8,6 @@ const tags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'FAIROPP', 'JA', 'MOD', '
 
 let filesPaths = [];
 let filePromises = [];
-let workers = [];
-let numChildren = 0;
 
 // Get list of files in FBOFEED_DIR
 function ReadFBOFiles(callback) {
@@ -32,8 +30,10 @@ function ReadFBOFiles(callback) {
 
 		Promise.all(filePromises).then((values) => {
 			filePaths = values.filter(value => {
-				return value? true:false;
+				return (value === null || value === undefined)? false:true;
 			});
+			
+			filePaths = filePaths.sort();
 			
 			for(let i = 0; i < numCPUs; i++) {
 				createWorker(callback);
@@ -46,20 +46,21 @@ function ReadFBOFiles(callback) {
 
 function createWorker(callback) {
 	let worker = child_process.fork('./parser/fbofeed.js');
-	workers.push(worker);
 
 	worker.on('message', message => {
-		console.log('Worker completed parsing ', message.filePath);
+		if (message.cmd === 'done') {
+			console.log('Worker completed parsing ', message.filePath);
+		} 
+
 		let path = filePaths.pop();
-		worker.send({filePath: filePaths.pop()});
+		worker.send({filePath: path});
 	});
 
 	worker.on('exit', (code, signal) => {
 		console.log("Child exited with signal: %s, code: %s", signal, code);
 	});
-
-	worker.send({filePath: filePaths.pop()});
 }
+
 module.exports.run = function(callback) {
 	ReadFBOFiles(callback);
 }

@@ -1,12 +1,11 @@
 process.on('message', message => {
 	parse(message.filePath, (err, filePath) => {
-		if (err) { 
-			console.log(err);
-			throw err;
-		}
-		process.send({filePath: filePath});
+		if (err) throw err;
+		process.send({cmd: 'done', filePath: filePath});
 	});
 });
+
+process.send({cmd: 'begin'});
 
 let normalizeRegex = /\n(?!^<\/?(AGENCY|AMDCSS|ARCHDATE|ARCHIVE|AWARD|AWARDEE|AWDAMT|AWDDATE|AWDNBR|CLASSCOD|COMBINE|CONTACT|DATE|DESC|DONBR|EMAIL|FAIROPP|FOJA|JA|LINENBR|LINK|LOCATION|MOD|MODNBR|NAICS|NTYPE|OFFADD|OFFICE|POPADDRESS|POPCOUNTRY|POPZIP|PRESOL|RESPDATE|SETASIDE|SNOTE|SOLNBR|SRCSGT|STAUTH|SUBJECT|UNARCHIVE|URL|YEAR|ZIP)>)/;
 
