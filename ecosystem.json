@@ -1,0 +1,38 @@
+{
+  /**
+   * Application configuration section
+   * http://pm2.keymetrics.io/docs/usage/application-declaration/
+   */
+  "apps" : [
+
+    // First application
+    {
+      "name"      : "fboparser",
+      "script"    : "app.js",
+      "instances" : 1,
+      "exec_mode" : "fork",
+      "env"       : {
+        "NODE_IS_GREAT" : "I know, right?",
+        "PORT"          : "80"
+      },
+      "env_production" : {
+        "NODE_ENV"  : "production",
+        "PORT"      : "80"
+      }
+    },
+  ],
+
+  /**
+   * Deployment section
+   * http://pm2.keymetrics.io/docs/usage/deployment/
+   */
+  "deploy": {
+    "production": {
+      "user"        : "www",
+      "host"        : "fbo.secondmind.co",
+      "ref"         : "origin/master",
+      "repo"        : "git@git.secondmind.co:fboparser.git",
+      "path"        : "/mnt/sharedvol1/fbo/fboparser"    
+    }    
+  }
+}
