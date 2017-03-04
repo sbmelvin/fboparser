@@ -9,7 +9,7 @@
     {
       "name"      : "fboparser",
       "script"    : "app.js",
-      "instances" : 1,
+      "instances" : 0,
       "exec_mode" : "fork",
       "env"       : {
         "NODE_IS_GREAT" : "I know, right?",
