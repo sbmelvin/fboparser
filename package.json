@@ -4,6 +4,7 @@
   "description": "FBO Parser",
   "main": "app.js",
   "dependencies": {
+    "jsftp": "^1.5.5"
   },
   "devDependencies": {},
   "scripts": {

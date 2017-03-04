@@ -1,11 +1,7 @@
 process.on('message', message => {
-	if (message.filePath === undefined) {
-		process.exit(0);
-	}
-	
 	parse(message.filePath, (err) => {
 		if (err) throw err;
-		process.send("Gimme");
+		process.send('NEW FILEPATH PLS!');
 	});
 });
 
