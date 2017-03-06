@@ -1,4 +1,1 @@
-*.csv
-output.txt
-output.csv
-out.csv
+csv/*
