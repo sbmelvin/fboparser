@@ -10,57 +10,18 @@ process.on('message', message => {
 });
 
 process.send({cmd: 'begin'});
+let outerTags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'FAIROPP', 'FSTD', 'ITB', 'JA', 'MOD', 'PRESOL', 'SNOTE', 'SRCSGT', 'SSALE', 'UNARCHIVE'];
+let innerTags = ['AGENCY', 'ARCHDATE', 'AWARDEE', 'AWDAMT', 'AWDDATE', 'AWDNBR', 'CLASSCOD', 'CONTACT', 'CORRECTION', 'DATE', 'DESC', 'DONBR', 'EMAIL', 'FOJA', 'LINENBR', 'LINK', 'LOCATION', 'MODNBR', 'NAICS', 'NTYPE', 'OFFADD', 'OFFICE', 'PASSWORD', 'POPADDRESS', 'POPCOUNTRY', 'POPZIP', 'RESPDATE', 'SETASIDE', 'SOLNBR', 'STAUTH', 'SUBJECT', 'URL', 'YEAR', 'ZIP'];
 
-let normalizeRegex = /\n(?!^<\/?(AGENCY|AMDCSS|ARCHDATE|ARCHIVE|AWARD|AWARDEE|AWDAMT|AWDDATE|AWDNBR|CLASSCOD|COMBINE|CONTACT|DATE|DESC|DONBR|EMAIL|FAIROPP|FOJA|JA|LINENBR|LINK|LOCATION|MOD|MODNBR|NAICS|NTYPE|OFFADD|OFFICE|POPADDRESS|POPCOUNTRY|POPZIP|PRESOL|RESPDATE|SETASIDE|SNOTE|SOLNBR|SRCSGT|STAUTH|SUBJECT|UNARCHIVE|URL|YEAR|ZIP)>)/;
+let tags = outerTags.map((tag) => {
+	let rgxStr = `(?:<${tag}>)[\\s\\S]*?(?=<\/${tag}>)`;
+	return { name: tag, regex: new RegExp(rgxStr, 'g')};
+});
 
-let tags = [
-	{ name: 'AMDCSS', regex:  new RegExp('(?:<AMDCSS>)[\\s\\S]*?(?=<\/AMDCSS>)', 'g')},
-	{ name: 'ARCHIVE', regex:  new RegExp('(?:<ARCHIVE>)[\\s\\S]*?(?=<\/ARCHIVE>)', 'g')},
-	{ name: 'AWARD', regex:  new RegExp('(?:<AWARD>)[\\s\\S]*?(?=<\/AWARD>)', 'g')},
-	{ name: 'COMBINE', regex:  new RegExp('(?:<COMBINE>)[\\s\\S]*?(?=<\/COMBINE>)', 'g')},
-	{ name: 'FAIROPP', regex:  new RegExp('(?:<FAIROPP>)[\\s\\S]*?(?=<\/FAIROPP>)', 'g')},
-	{ name: 'JA', regex:  new RegExp('(?:<JA>)[\\s\\S]*?(?=<\/JA>)', 'g')},
-	{ name: 'MOD', regex:  new RegExp('(?:<MOD>)[\\s\\S]*?(?=<\/MOD>)', 'g')},
-	{ name: 'PRESOL', regex:  new RegExp('(?:<PRESOL>)[\\s\\S]*?(?=<\/PRESOL>)', 'g')},
-	{ name: 'SNOTE', regex:  new RegExp('(?:<SNOTE>)[\\s\\S]*?(?=<\/SNOTE>)', 'g')},
-	{ name: 'SRCSGT', regex:  new RegExp('(?:<SRCSGT>)[\\s\\S]*?(?=<\/SRCSGT>)', 'g')},
-	{ name: 'UNARCHIVE', regex:  new RegExp('(?:<UNARCHIVE>)[\\s\\S]*?(?=<\/UNARCHIVE>)', 'g')}
-	];
-
-let fields = [
-	{ name: 'agency', regex: /^<AGENCY>(.*)/},
-	{ name: 'archdate', regex: /^<ARCHDATE>(.*)/},
-	{ name: 'awardee', regex: /^<AWARDEE>(.*)/},
-	{ name: 'awdamt', regex: /^<AWDAMT>(.*)/},
-	{ name: 'awddate', regex: /^<AWDDATE>(.*)/},
-	{ name: 'awdnbr', regex: /^<AWDNBR>(.*)/},
-	{ name: 'classcod', regex: /^<CLASSCOD>(.*)/},
-	{ name: 'contact', regex: /^<CONTACT>(.*)/},
-	{ name: 'date', regex: /^<DATE>(.*)/},
-	{ name: 'desc', regex: /^<DESC>(.*)/},
-	{ name: 'donbr', regex: /^<DONBR>(.*)/},
-	{ name: 'email', regex: /^<EMAIL>(.*)/},
-	{ name: 'foja', regex: /^<FOJA>(.*)/},
-	{ name: 'linenbr', regex: /^<LINENBR>(.*)/},
-	{ name: 'link', regex: /^<LINK>(.*)/},
-	{ name: 'location', regex: /^<LOCATION>(.*)/},
-	{ name: 'modnbr', regex: /^<MODNBR>(.*)/},
-	{ name: 'naics', regex: /^<NAICS>(.*)/},
-	{ name: 'ntype', regex: /^<NTYPE>(.*)/},
-	{ name: 'offadd', regex: /^<OFFADD>(.*)/},
-	{ name: 'office', regex: /^<OFFICE>(.*)/},
-	{ name: 'popaddress', regex: /^<POPADDRESS>(.*)/},
-	{ name: 'popcountry', regex: /^<POPCOUNTRY>(.*)/},
-	{ name: 'popzip', regex: /^<POPZIP>(.*)/},
-	{ name: 'respdate', regex: /^<RESPDATE>(.*)/},
-	{ name: 'setaside', regex: /^<SETASIDE>(.*)/},
-	{ name: 'solnbr', regex: /^<SOLNBR>(.*)/},
-	{ name: 'stauth', regex: /^<STAUTH>(.*)/},
-	{ name: 'subject', regex: /^<SUBJECT>(.*)/},
-	{ name: 'url', regex: /^<URL>(.*)/},
-	{ name: 'year', regex: /^<YEAR>(.*)/},
-	{ name: 'zip', regex: /^<ZIP>(.*)/}
-];
+let fields = innerTags.map((tag) => {
+	let rgxStr = `^<${tag}>(.*)`;
+	return { name: tag, regex: new RegExp(rgxStr)};
+});
 
 function objToCSV(o) {
 	let str = '';
@@ -79,7 +40,7 @@ function objToCSV(o) {
 }
 
 function splitMatch(match) {
-	let tags = '(AGENCY|AMDCSS|ARCHDATE|ARCHIVE|AWARD|AWARDEE|AWDAMT|AWDDATE|AWDNBR|CLASSCOD|COMBINE|CONTACT|DATE|DESC|DONBR|EMAIL|FAIROPP|FOJA|JA|LINENBR|LINK|LOCATION|MOD|MODNBR|NAICS|NTYPE|OFFADD|OFFICE|POPADDRESS|POPCOUNTRY|POPZIP|PRESOL|RESPDATE|SETASIDE|SNOTE|SOLNBR|SRCSGT|STAUTH|SUBJECT|UNARCHIVE|URL|YEAR|ZIP)';
+	let tags = `(${innerTags.join('|')}${outerTags.join('|')})`;
 	let regexStr = `(^<${tags}>[\\s\\S]*?)(?=</?${tags}>)`;
 	let regex = new RegExp(regexStr, 'mg');
 
@@ -103,7 +64,7 @@ function parseLink(text) {
 }
 
 function parseEmail(text){
-	let regex = /<EMAIL>[\s\S]+<EMAIL>([\s\S]+)<DESC>(.*)/;
+	let regex = /<EMAIL>[\s\S]+<(?:EMAIL|ADDRESS)>([\s\S]+)<DESC>(.*)/;
 	let result = regex.exec(text);
 	let email = '';
 	let desc = '';
@@ -119,44 +80,20 @@ function parse(filePath, callback) {
 	const fs = require('fs');
 	const CSV_FILENAME = './csv/fbofeed_';
 
-	let emptyRecord = {
-		agency: '',
-		archdate: '',
-		awardee: '',
-		awdamt: '',
-		awddate: '',
-		awdnbr: '',
-		classcod: '',
-		contact: '',
-		date: '',
-		desc: '',
-		donbr: '',
+	let emptyRecord = {};
+
+	for (let tag of innerTags) {
+		emptyRecord[tag] = '';
+	}
+
+	emptyRecord = Object.assign(emptyRecord, {
 		poc_email: '',
 		poc_email_desc: '',
-		foja: '',
-		linenbr: '',
 		link_url: '',
 		link_desc: '',
-		location: '',
-		modnbr: '',
-		naics: '',
-		ntype: '',
-		offadd: '',
-		office: '',
-		popaddress: '',
-		popcountry: '',
-		popzip: '',
-		respdate: '',
-		setaside: '',
-		solnbr: '',
-		stauth: '',
-		subject: '',
-		url: '',
-		year: '',
-		zip: '',
 		filename: '',
 		record_text: ''
-	};
+	});
 
 	let result = {};
 
