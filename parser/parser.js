@@ -11,6 +11,8 @@ let filePromises = [];
 
 // Get list of files in FBOFEED_DIR
 function ReadFBOFiles(callback) {
+	if (FBOFEED_DIR === undefined) throw new Error('FBOFEED_DIR Environment variable not set.');
+	
 	fs.readdir(FBOFEED_DIR, (err, files) => {
 		if (err) return callback(err);
 
