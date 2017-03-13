@@ -78,7 +78,7 @@ function parseEmail(text){
 
 function parse(filePath, callback) {
 	const fs = require('fs');
-	const CSV_FILENAME = './csv/fbofeed_';
+	const CSV_FILENAME = './db_data/parsed/csv/fbofeed_';
 
 	let emptyRecord = {};
 
