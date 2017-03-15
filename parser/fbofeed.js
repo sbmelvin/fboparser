@@ -11,14 +11,14 @@ process.on('message', message => {
 
 process.send({cmd: 'begin'});
 let outerTags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'FAIROPP', 'FSTD', 'ITB', 'JA', 'MOD', 'PRESOL', 'SNOTE', 'SRCSGT', 'SSALE', 'UNARCHIVE'];
-let innerTags = ['AGENCY', 'ARCHDATE', 'AWARDEE', 'AWDAMT', 'AWDDATE', 'AWDNBR', 'CLASSCOD', 'CONTACT', 'CORRECTION', 'DATE', 'DESC', 'DONBR', 'EMAIL', 'FOJA', 'LINENBR', 'LINK', 'LOCATION', 'MODNBR', 'NAICS', 'NTYPE', 'OFFADD', 'OFFICE', 'PASSWORD', 'POPADDRESS', 'POPCOUNTRY', 'POPZIP', 'RESPDATE', 'SETASIDE', 'SOLNBR', 'STAUTH', 'SUBJECT', 'URL', 'YEAR', 'ZIP'];
+let innerTags = ['AGENCY', 'ARCHDATE', 'AWARDEE', 'AWDAMT', 'AWDDATE', 'AWDNBR', 'CBAC', 'CLASSCOD', 'CONTACT', 'CORRECTION', 'DATE', 'DESC', 'DONBR', 'EMAIL', 'FOJA', 'LINENBR', 'LINK', 'LOCATION', 'MODNBR', 'NAICS', 'NTYPE', 'OFFADD', 'OFFICE', 'PASSWORD', 'POPADDRESS', 'POPCOUNTRY', 'POPZIP', 'RESPDATE', 'SETASIDE', 'SOLNBR', 'STAUTH', 'SUBJECT', 'URL', 'YEAR', 'ZIP'];
 
-let tags = outerTags.map((tag) => {
+let tags = outerTags.map(tag => {
 	let rgxStr = `(?:<${tag}>)[\\s\\S]*?(?=<\/${tag}>)`;
 	return { name: tag, regex: new RegExp(rgxStr, 'g')};
 });
 
-let fields = innerTags.map((tag) => {
+let fields = innerTags.map(tag => {
 	let rgxStr = `^<${tag}>(.*)`;
 	return { name: tag, regex: new RegExp(rgxStr)};
 });
@@ -31,7 +31,7 @@ function objToCSV(o) {
 		if (val.length > 0) {
 			val = val.replace(/["]/g,'""');
 			val = '"' + val + '"';
-		}
+		} 
 		
 		str += (val + ',');
 	}
@@ -52,7 +52,7 @@ function normalize(text) {
 }
 
 function parseLink(text) {
-	let regex = /<LINK>[\s\S]+<URL>([\s\S]+)<DESC>(.*)/;
+	let regex = /<LINK>[\s\S]*?<URL>([\s\S]*?)<DESC>(.*)/;
 	let result = regex.exec(text);
 	let url = '';
 	let desc = '';
@@ -64,7 +64,7 @@ function parseLink(text) {
 }
 
 function parseEmail(text){
-	let regex = /<EMAIL>[\s\S]+<(?:EMAIL|ADDRESS)>([\s\S]+)<DESC>(.*)/;
+	let regex = /<EMAIL>[\s\S]+?<(?:EMAIL|ADDRESS)>([\s\S]+?)<DESC>(.*)/;
 	let result = regex.exec(text);
 	let email = '';
 	let desc = '';
@@ -91,8 +91,7 @@ function parse(filePath, callback) {
 		poc_email_desc: '',
 		link_url: '',
 		link_desc: '',
-		filename: '',
-		record_text: ''
+		filename: ''
 	});
 
 	let result = {};
@@ -113,33 +112,48 @@ function parse(filePath, callback) {
 				match = normalize(match);
 
 				let lines = splitMatch(match);
-				lines.forEach( line => {
-					fields.forEach( field => {
+				let prevTag = '';
+
+				for (let i=0; i<lines.length; i++) {
+					let line = lines[i];
+
+					for (let j=0; j<fields.length; j++) {
+						let field = fields[j];
 						let fieldMatch = field.regex.exec(line);
 						
 						if (fieldMatch) {
 							let result;
 							switch(field.name) {
-								case 'link':
+								case 'LINK':
 									result = parseLink(match);
 									record.link_url = result.url;
 									record.link_desc = result.desc;
+									prevTag = 'LINK';
 									break;
 
-								case 'email':
+								case 'EMAIL':
 									result = parseEmail(match);
 									record.poc_email = result.email;
 									record.poc_email_desc = result.desc;
+									prevTag = 'EMAIL';
 									break;
 
+								case 'DESC':
+									if ((prevTag === 'URL' || prevTag === 'EMAIL' || prevTag === 'ADDRESS') === false) {
+										record[field.name] = fieldMatch[1].trim();
+									}
+									prevTag = field.name;
+									break;
+									
 								default: 
 									record[field.name] = fieldMatch[1].trim();
+									prevTag = field.name;
+									break;
 							}
 						}
-					});
-				});
+					}
+				}
 				
-				record.record_text = match;
 				return record;
 			});
 
@@ -149,7 +163,6 @@ function parse(filePath, callback) {
 				record.filename = filePath;
 				csvOutput += objToCSV(record);
 			});
-
 
 			fs.appendFile(CSV_FILENAME + tag.name + '.csv', csvOutput, (err) => {
 				if (err) return callback(err);
