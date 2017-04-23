@@ -14,7 +14,7 @@ let outerTags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'FAIROPP', 'FSTD', 'IT
 let innerTags = ['AGENCY', 'ARCHDATE', 'AWARDEE', 'AWDAMT', 'AWDDATE', 'AWDNBR', 'CBAC', 'CLASSCOD', 'CONTACT', 'CORRECTION', 'DATE', 'DESC', 'DONBR', 'EMAIL', 'FOJA', 'LINENBR', 'LINK', 'LOCATION', 'MODNBR', 'NAICS', 'NTYPE', 'OFFADD', 'OFFICE', 'PASSWORD', 'POPADDRESS', 'POPCOUNTRY', 'POPZIP', 'RESPDATE', 'SETASIDE', 'SOLNBR', 'STAUTH', 'SUBJECT', 'URL', 'YEAR', 'ZIP'];
 
 let tags = outerTags.map(tag => {
-	let rgxStr = `(?:<${tag}>)[\\s\\S]*?(?=<\/${tag}>)`;
+	let rgxStr = `(?:<${tag}>)[\\s\\S]*?(?:</${tag}>)`
 	return { name: tag, regex: new RegExp(rgxStr, 'g')};
 });
 
@@ -40,8 +40,11 @@ function objToCSV(o) {
 }
 
 function splitMatch(match) {
-	let tags = `(${innerTags.join('|')}${outerTags.join('|')})`;
-	let regexStr = `(^<${tags}>[\\s\\S]*?)(?=</?${tags}>)`;
+	let innerTagJoin = innerTags.join('|');
+	let outerTagJoin = outerTags.join('|/');
+	let combinedJoin = `${innerTagJoin}|/${outerTagJoin}`
+
+	let regexStr = `(^<(${innerTagJoin})>[\\s\\S]*?)(?=^<(${combinedJoin})>)`;
 	let regex = new RegExp(regexStr, 'mg');
 
 	return match.match(regex);
@@ -52,7 +55,7 @@ function normalize(text) {
 }
 
 function parseLink(text) {
-	let regex = /<LINK>[\s\S]*?<URL>([\s\S]*?)<DESC>(.*)/;
+	let regex = /^<LINK>[\s]+?^<URL>([\s\S]*?)^<DESC>([\s\S]*?)$/m;
 	let result = regex.exec(text);
 	let url = '';
 	let desc = '';
@@ -64,7 +67,7 @@ function parseLink(text) {
 }
 
 function parseEmail(text){
-	let regex = /<EMAIL>[\s\S]+?<(?:EMAIL|ADDRESS)>([\s\S]+?)<DESC>(.*)/;
+	let regex = /^<EMAIL>[\s]+?^<(?:EMAIL|ADDRESS)>([\s\S]+?)^<DESC>([\s\S]*?)$/m;
 	let result = regex.exec(text);
 	let email = '';
 	let desc = '';
@@ -104,8 +107,7 @@ function parse(filePath, callback) {
 
 		tags.forEach( tag => {
 			let matches = data.match(tag.regex) || [];
-			//	console.log("tag: %s, len: %d", tag.name, matches.length);
-
+ 
 			let records = matches.map( match => {
 				let record = Object.assign({}, emptyRecord); 
 
@@ -113,8 +115,8 @@ function parse(filePath, callback) {
 
 				let lines = splitMatch(match);
 				let prevTag = '';
-
-				for (let i=0; i<lines.length; i++) {
+ 
+ 				for (let i=0; i<lines.length; i++) {
 					let line = lines[i];
 
 					for (let j=0; j<fields.length; j++) {

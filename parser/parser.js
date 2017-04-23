@@ -3,7 +3,8 @@ const path = require('path');
 const child_process = require('child_process');
 const numCPUs = require('os').cpus().length;
 
-const FBOFEED_DIR = process.env.FBOFEED_DIR;
+const FBOFEED_DIR = process.env.FBOFEED_DIR || '/Users/stephen/Development/fbo_data_truth';
+
 const tags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'FAIROPP', 'JA', 'MOD', 'PRESOL', 'SNOTE', 'SRCSGT', 'UNARCHIVE'];
 
 let filesPaths = [];
