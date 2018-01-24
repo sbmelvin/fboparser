@@ -30,8 +30,11 @@ function objToCSV(o) {
 		val = val.trim();
 		if (val.length > 0) {
 			val = val.replace(/["]/g,'""');
-			val = '"' + val + '"';
-		} 
+		} else {
+			val = "NULL"
+		}
+
+		val = '"' + val + '"';
 		
 		str += (val + ',');
 	}
@@ -51,7 +54,7 @@ function splitMatch(match) {
 }
 
 function normalize(text) {
-	return text.replace(/\u0000/g,'');
+	return text.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g,'');
 }
 
 function parseLink(text) {
@@ -155,7 +158,7 @@ function parse(filePath, callback) {
 						}
 					}
 				}
-				
+		
 				return record;
 			});
 
@@ -166,9 +169,15 @@ function parse(filePath, callback) {
 				csvOutput += objToCSV(record);
 			});
 
-			fs.appendFile(CSV_FILENAME + tag.name + '.csv', csvOutput, (err) => {
-				if (err) return callback(err);
-			});
+			try {
+				fs.appendFileSync(CSV_FILENAME + tag.name + '.csv', csvOutput);
+			} catch (err) {
+				return callback(err);
+			}
+
+			//fs.appendFile(CSV_FILENAME + tag.name + '.csv', csvOutput, (err) => {
+			//	if (err) return callback(err);
+			//});
 		});
 
 		console.log("Parsed %s", filePath);
