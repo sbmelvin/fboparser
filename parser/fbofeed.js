@@ -1,15 +1,20 @@
 process.on('message', message => {
-	if (message.cmd === 'parse') {
-		parse(message.filePath, (err, filePath) => {
-			if (err) throw err;
-			process.send({cmd: 'done', filePath: filePath});
-		});
-	} else if (message.cmd === 'quit') {
-		process.exit(0);
+	switch(message.cmd) {
+		case 'parse':
+			parse(message.filePath, (err, filePath) => {
+				if (err) throw err;
+				process.send({cmd: 'done', filePath: filePath});
+			});
+		break;
+
+		case 'quit':
+			process.exit(0);
+		break;
 	}
 });
 
 process.send({cmd: 'begin'});
+
 let outerTags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'FAIROPP', 'FSTD', 'ITB', 'JA', 'MOD', 'PRESOL', 'SNOTE', 'SRCSGT', 'SSALE', 'UNARCHIVE'];
 let innerTags = ['AGENCY', 'ARCHDATE', 'AWARDEE', 'AWDAMT', 'AWDDATE', 'AWDNBR', 'CBAC', 'CLASSCOD', 'CONTACT', 'CORRECTION', 'DATE', 'DESC', 'DONBR', 'EMAIL', 'FOJA', 'LINENBR', 'LINK', 'LOCATION', 'MODNBR', 'NAICS', 'NTYPE', 'OFFADD', 'OFFICE', 'PASSWORD', 'POPADDRESS', 'POPCOUNTRY', 'POPZIP', 'RESPDATE', 'SETASIDE', 'SOLNBR', 'STAUTH', 'SUBJECT', 'URL', 'YEAR', 'ZIP'];
 
@@ -28,15 +33,9 @@ function objToCSV(o) {
 	for (let prop in o) {
 		let val = o[prop];
 		val = val.trim();
-		if (val.length > 0) {
-			val = val.replace(/["]/g,'""');
-		} else {
-			val = "NULL"
-		}
-
-		val = '"' + val + '"';
-		
-		str += (val + ',');
+		val = (val.length > 0 ? val.replace(/["]/g, `""`) : "NULL");
+		val = `"${val}",`;
+		str += val;
 	}
 	str = str.slice(0, -1) + '\n';
 	return str;
@@ -69,7 +68,7 @@ function parseLink(text) {
 	return {url: url, desc: desc};
 }
 
-function parseEmail(text){
+function parseEmail(text) {
 	let regex = /^<EMAIL>[\s]+?^<(?:EMAIL|ADDRESS)>([\s\S]+?)^<DESC>([\s\S]*?)$/m;
 	let result = regex.exec(text);
 	let email = '';
@@ -119,10 +118,10 @@ function parse(filePath, callback) {
 				let lines = splitMatch(match);
 				let prevTag = '';
  
- 				for (let i=0; i<lines.length; i++) {
+ 				for (let i = 0; i < lines.length; i++) {
 					let line = lines[i];
 
-					for (let j=0; j<fields.length; j++) {
+					for (let j = 0; j < fields.length; j++) {
 						let field = fields[j];
 						let fieldMatch = field.regex.exec(line);
 						
@@ -174,10 +173,6 @@ function parse(filePath, callback) {
 			} catch (err) {
 				return callback(err);
 			}
-
-			//fs.appendFile(CSV_FILENAME + tag.name + '.csv', csvOutput, (err) => {
-			//	if (err) return callback(err);
-			//});
 		});
 
 		console.log("Parsed %s", filePath);

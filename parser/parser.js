@@ -5,7 +5,7 @@ const child_process = require('child_process');
 // Restrict numCPUs to 1 until multicpu parsing is fixed
 const numCPUs = 1 || require('os').cpus().length;
 
-const FBOFEED_DIR = process.env.FBOFEED_DIR || '/Users/stephen/Development/fbo_data/feed';
+const FBOFEED_DIR = process.env.FBOFEED_DIR || '/Users/stephen/Development/priv/fbo_data/feed';
 
 const tags = ['AMDCSS', 'ARCHIVE', 'AWARD', 'COMBINE', 'FAIROPP', 'JA', 'MOD', 'PRESOL', 'SNOTE', 'SRCSGT', 'UNARCHIVE'];
 
@@ -30,13 +30,13 @@ function ReadFBOFiles(callback) {
 					res(filePath);
 				});
 			});
+
 			filePromises.push(filePromise);
 		});
 
-		Promise.all(filePromises).then((values) => {
-			filePaths = values.filter(value => {
-				// What the hell, Steve?
-				return (value === null || value === undefined)? false:true;
+		Promise.all(filePromises).then( values => {
+			filePaths = values.filter( value => {
+				return value != null;				
 			});
 			
 			filePaths = filePaths.sort();
@@ -44,8 +44,8 @@ function ReadFBOFiles(callback) {
 			for(let i = 0; i < numCPUs; i++) {
 				createWorker(callback);
 			}
-		}).catch(reason => {
-			console.log("Err: ", reason);
+		}).catch( err => {
+			console.log("Err: ", err);
 		});
 	});
 }
@@ -54,10 +54,6 @@ function createWorker(callback) {
 	let worker = child_process.fork('./parser/fbofeed.js');
 
 	worker.on('message', message => {
-		if (message.cmd === 'done') {
-			// console.log('Worker completed parsing ', message.filePath);
-		} 
-
 		let path = filePaths.pop();
 
 		let command = {};
