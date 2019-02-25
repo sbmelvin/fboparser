@@ -1,4 +1,4 @@
 node_modules
-db_data/parsed/csv/*.csv
+db_data/parsed
 *.dump
 .DS_Store
