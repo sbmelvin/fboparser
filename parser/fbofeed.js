@@ -99,8 +99,6 @@ function parse(filePath, callback) {
 		filename: ''
 	});
 
-	let result = {};
-
 	// Read the file and parse its contents
 	fs.readFile(filePath, 'utf8', (err, data) => {
 		if (err) return callback(err);
@@ -132,14 +130,14 @@ function parse(filePath, callback) {
 									result = parseLink(match);
 									record.link_url = result.url;
 									record.link_desc = result.desc;
-									prevTag = 'LINK';
+									prevTag = field.name;
 									break;
 
 								case 'EMAIL':
 									result = parseEmail(match);
 									record.poc_email = result.email;
 									record.poc_email_desc = result.desc;
-									prevTag = 'EMAIL';
+									prevTag = field.name;
 									break;
 
 								case 'DESC':
