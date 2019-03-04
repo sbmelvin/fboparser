@@ -22,7 +22,7 @@ function ReadFBOFiles(callback) {
 		// For each file, craft the full path
 		files.forEach(file => {
 			let filePath = path.join(FBOFEED_DIR, file);
-			let filePromise = new Promise((res, rej) => {
+			let filePromise = new Promise( (res, rej) => {
 				// Ensure the file is not a directory
 				fs.stat(filePath, (err, stats) => {
 					if (err) return callback(err);
@@ -59,9 +59,9 @@ function createWorker(callback) {
 		let command = {};
 
 		if (path === undefined) { 
-			command = {cmd: 'quit'};
+			command = { cmd: 'quit' };
 		} else {
-			command = { cmd: 'parse', filePath: path};
+			command = { cmd: 'parse', filePath: path };
 		}
 
 		worker.send(command);
